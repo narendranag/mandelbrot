@@ -6,9 +6,11 @@ let offsetX = 0;
 let offsetY = 0;
 let isDragging = false;
 let startX, startY;
+let touchZoomDistStart = 0;
+let touchZooming = false;
 
 function setup() {
-  createCanvas(800, 800);
+  createCanvas(windowWidth, windowHeight);
   pixelDensity(1);
   noLoop(); // Draw once, then only redraw when necessary
   drawMandelbrot();
@@ -56,6 +58,11 @@ function drawMandelbrot() {
   updatePixels();
 }
 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  drawMandelbrot();
+}
+
 function mouseWheel(event) {
   let zoomFactor = 0.9;
   if (event.delta > 0) {
@@ -84,4 +91,37 @@ function mouseDragged() {
 
 function mouseReleased() {
   isDragging = false;
+}
+
+function touchStarted() {
+  if (touches.length === 2) {
+    touchZoomDistStart = dist(touches[0].x, touches[0].y, touches[1].x, touches[1].y);
+    touchZooming = true;
+  } else if (touches.length === 1) {
+    startX = touches[0].x;
+    startY = touches[0].y;
+    isDragging = true;
+  }
+}
+
+function touchMoved() {
+  if (touchZooming && touches.length === 2) {
+    let currentDist = dist(touches[0].x, touches[0].y, touches[1].x, touches[1].y);
+    let zoomFactor = currentDist / touchZoomDistStart;
+    zoom *= zoomFactor;
+    touchZoomDistStart = currentDist;
+    drawMandelbrot();
+  } else if (isDragging && touches.length === 1) {
+    offsetX += (startX - touches[0].x) / width * (maxVal - minVal) / zoom;
+    offsetY += (startY - touches[0].y) / height * (maxVal - minVal) / zoom;
+    startX = touches[0].x;
+    startY = touches[0].y;
+    drawMandelbrot();
+  }
+  return false; // Prevent default touch behavior
+}
+
+function touchEnded() {
+  isDragging = false;
+  touchZooming = false;
 }
